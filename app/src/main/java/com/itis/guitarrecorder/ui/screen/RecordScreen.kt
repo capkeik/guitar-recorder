@@ -36,15 +36,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.itis.guitarrecorder.R
 import com.itis.guitarrecorder.ui.theme.Orange
-import java.util.concurrent.TimeUnit
+import com.itis.guitarrecorder.viewmodel.RecordViewModel
 
 @Composable
-fun RecordScreen(x: String = "Hello"): Unit {
-    CenteredTextViewWithIcons()
+fun RecordScreen(
+    viewModel: RecordViewModel
+): Unit {
+    CenteredTextViewWithIcons(viewModel)
 }
 
 @Composable
-fun CenteredTextViewWithIcons() {
+fun CenteredTextViewWithIcons(viewModel: RecordViewModel) {
     val interactionSource = remember { MutableInteractionSource() }
     var showToast by remember { mutableStateOf(false) }
     Box(
@@ -60,7 +62,7 @@ fun CenteredTextViewWithIcons() {
             modifier = Modifier.fillMaxSize()
         ) {
             Text(
-                text = formatTime(0),
+                text = formatTime(viewModel.dur),
                 fontSize = 64.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1
@@ -75,9 +77,12 @@ fun CenteredTextViewWithIcons() {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_cancel),
-                contentDescription = null, // Provide a meaningful description
-                tint = Color.Black, // Adjust the tint color if needed
-                modifier = Modifier.size(60.dp)
+                contentDescription = null,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clickable {
+                        viewModel.cancel()
+                    }
             )
             Spacer(modifier = Modifier.size(16.dp))
             Canvas(
@@ -88,7 +93,11 @@ fun CenteredTextViewWithIcons() {
                         indication = null,
                         interactionSource = interactionSource
                     ) {
-                        showToast = true
+                        if (viewModel.isRunning) {
+                            viewModel.pauseRecording()
+                        } else {
+                            viewModel.startRecording()
+                        }
                     }
             ) {
                 val canvasWidth = 96.dp
@@ -104,30 +113,34 @@ fun CenteredTextViewWithIcons() {
                     style = Stroke(width = 4.dp.toPx())
                 )
 
-                drawCircle(
-                    color = Orange,
-                    radius = (radius.toPx() - canvasWidth.toPx() / 2) / 2,
-                    center = center
-                )
+                if (!viewModel.isRunning){
+                    drawCircle(
+                        color = Orange,
+                        radius = (radius.toPx() - canvasWidth.toPx() / 2) / 2,
+                        center = center
+                    )
+                }
             }
             Spacer(modifier = Modifier.size(16.dp))
-            Icon(
-                painter = painterResource(id = R.drawable.ic_menu),
-                contentDescription = null,
-                tint = Color.Black,
-                modifier = Modifier.size(60.dp)
-            )
-        }
-    }
-    val context = LocalContext.current
-    LaunchedEffect(showToast) {
-        if (showToast) {
-            Toast.makeText(
-                context,
-                "Canvas Clicked!",
-                Toast.LENGTH_SHORT
-            ).show()
-            showToast = false
+            if (!viewModel.isStarted){
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_menu),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clickable {}
+                )
+            } else {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_save),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clickable {
+                            viewModel.stopRecording()
+                        }
+                )
+            }
         }
     }
 }
@@ -135,17 +148,18 @@ fun CenteredTextViewWithIcons() {
 @Preview
 @Composable
 fun ScreenPrev() {
-    RecordScreen()
+    RecordScreen(RecordViewModel({}, {}, {}))
 }
 
 fun formatTime(timeInMillis: Long): String {
-    var millis = timeInMillis
-    val hours = TimeUnit.MILLISECONDS.toHours(millis)
-    millis -= TimeUnit.HOURS.toMillis(hours)
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
-    millis -= TimeUnit.MINUTES.toMillis(minutes)
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(millis)
-    return "${if (hours < 10) "0" else ""}$hours:" +
-            "${if (minutes < 10) "0" else ""}$minutes:" +
-            "${if (seconds < 10) "0" else ""}$seconds"
+
+    val millis = (timeInMillis % 1000) / 10
+    val seconds = (timeInMillis / 1000) % 60
+    val minutes = (timeInMillis / (1000 * 60)) % 60
+    val hours = (timeInMillis / (1000 * 60 * 60))
+
+    return if (hours > 0)
+        "%02d:%02d:%02d.%02d".format(hours, minutes, seconds, millis)
+    else
+        "%02d:%02d.%02d".format(minutes, seconds, millis)
 }

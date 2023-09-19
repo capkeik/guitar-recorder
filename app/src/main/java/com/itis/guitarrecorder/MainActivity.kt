@@ -1,5 +1,8 @@
 package com.itis.guitarrecorder
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.media.MediaRecorder
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,12 +13,36 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat
 import com.itis.guitarrecorder.ui.screen.RecordScreen
 import com.itis.guitarrecorder.ui.theme.GuitarRecorderTheme
+import com.itis.guitarrecorder.utils.Timer
+import com.itis.guitarrecorder.viewmodel.RecordViewModel
+import java.io.IOException
 
+const val REQUEST_CODE = 200
 class MainActivity : ComponentActivity() {
+
+    private val permissions = arrayOf(Manifest.permission.RECORD_AUDIO)
+    private var permGranted = false
+
+    private lateinit var recorder: MediaRecorder
+
+    private var dirPath = ""
+
+    private lateinit var timer: Timer
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        requestPermission()
         super.onCreate(savedInstanceState)
+
+        val recordViewModel = RecordViewModel(
+            { timer.start() },
+            { timer.pause() },
+            { timer.stop() }
+        )
+
+        timer = Timer(recordViewModel)
         setContent {
             GuitarRecorderTheme {
                 // A surface container using the 'background' color from the theme
@@ -23,9 +50,53 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    RecordScreen()
+                    RecordScreen(recordViewModel)
                 }
             }
+        }
+    }
+
+    fun startRecording(fileName: String) {
+
+        recorder = MediaRecorder()
+
+        dirPath = "${externalCacheDir?.absolutePath}/"
+
+
+        recorder.apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+            setOutputFile("$dirPath$fileName.mp3")
+
+            try {
+                prepare()
+            } catch (e: IOException) {
+
+            }
+
+            start()
+        }
+    }
+
+    fun pauseRecording() {
+        recorder.pause()
+    }
+
+    fun resumeRecorder() {
+        recorder.resume()
+    }
+    private fun requestPermission() {
+        permGranted = (ActivityCompat.checkSelfPermission(
+            this,
+            permissions[0]
+        ) == PackageManager.PERMISSION_GRANTED)
+
+        if (!permGranted) {
+            ActivityCompat.requestPermissions(
+                this,
+                permissions,
+                REQUEST_CODE)
         }
     }
 }
