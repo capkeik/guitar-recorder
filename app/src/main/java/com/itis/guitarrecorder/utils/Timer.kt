@@ -3,9 +3,9 @@ package com.itis.guitarrecorder.utils
 import android.os.Handler
 import android.os.Looper
 
-class Timer(listener: OnTimerClickListener) {
+class Timer(listener: OnTimerTickListener) {
 
-    interface OnTimerClickListener {
+    interface OnTimerTickListener {
         fun onTimerTick(duration: Long)
     }
 

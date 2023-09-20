@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,8 +20,11 @@ import com.itis.guitarrecorder.ui.theme.GuitarRecorderTheme
 import com.itis.guitarrecorder.utils.Timer
 import com.itis.guitarrecorder.viewmodel.RecordViewModel
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
 
 const val REQUEST_CODE = 200
+
 class MainActivity : ComponentActivity() {
 
     private val permissions = arrayOf(Manifest.permission.RECORD_AUDIO)
@@ -37,12 +41,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val recordViewModel = RecordViewModel(
-            { timer.start() },
-            { timer.pause() },
-            { timer.stop() }
+            {
+                timer.start()
+                startRecording()
+            }, {
+                timer.pause()
+                pauseRecording()
+            }, {
+                timer.stop()
+                stopRecording()
+            }, {
+                timer.start()
+                resumeRecorder()
+            }
         )
 
         timer = Timer(recordViewModel)
+
+        recordViewModel.dur.observeForever {
+            try {
+                val amp = recorder.maxAmplitude
+                recordViewModel.addAmp(amp)
+                Log.d("add amp", "")
+                Log.d("amps", recordViewModel.amps.value.toString())
+            } catch (e: Exception) {}
+        }
+
         setContent {
             GuitarRecorderTheme {
                 // A surface container using the 'background' color from the theme
@@ -56,13 +80,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun startRecording(fileName: String) {
+    fun startRecording() {
 
         recorder = MediaRecorder()
 
         dirPath = "${externalCacheDir?.absolutePath}/"
 
-
+        val formatter = SimpleDateFormat("yyyy.MM.DD_hh.mm.ss")
+        val fileName = "recording_${formatter.format(Date())}"
         recorder.apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
@@ -72,7 +97,7 @@ class MainActivity : ComponentActivity() {
             try {
                 prepare()
             } catch (e: IOException) {
-
+                println(e)
             }
 
             start()
@@ -86,6 +111,15 @@ class MainActivity : ComponentActivity() {
     fun resumeRecorder() {
         recorder.resume()
     }
+
+    fun stopRecording() {
+        try {
+            recorder.stop()
+        } catch (e: Exception) {
+            println(e)
+        }
+    }
+
     private fun requestPermission() {
         permGranted = (ActivityCompat.checkSelfPermission(
             this,
@@ -96,7 +130,8 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(
                 this,
                 permissions,
-                REQUEST_CODE)
+                REQUEST_CODE
+            )
         }
     }
 }
