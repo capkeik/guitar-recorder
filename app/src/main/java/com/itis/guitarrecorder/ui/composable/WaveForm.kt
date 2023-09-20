@@ -23,7 +23,7 @@ fun WaveForm(amps: java.util.ArrayList<Int>) {
     val spikeWidth = 9f
     Canvas(modifier = Modifier
         .fillMaxWidth()
-        .height(360.dp)
+        .height(250.dp)
 //        .padding(start = 0.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
 
     ) {
