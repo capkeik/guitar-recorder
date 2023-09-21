@@ -1,4 +1,4 @@
-package com.itis.guitarrecorder.db.model
+package com.itis.guitarrecorder.model
 
 data class ChainEntry(
     val name: String,
