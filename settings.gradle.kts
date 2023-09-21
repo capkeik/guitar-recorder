@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "GuitarRecorder"
 include(":app")
+include(":soundprocessing")

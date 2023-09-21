@@ -3,11 +3,13 @@ package com.itis.guitarrecorder.utils.elements
 import com.itis.guitarrecorder.utils.ChainElement
 import java.nio.Buffer
 
+
+external fun processAmp(buffer: Buffer, gain: Int): Buffer
 class Amp(
-    gain: Int
+    val gain: Int
 ): ChainElement {
     override fun process(buffer: Buffer): Buffer {
-        TODO("Not yet implemented")
+        return processAmp(buffer, gain)
     }
 
 }

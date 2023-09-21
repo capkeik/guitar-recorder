@@ -69,6 +69,9 @@ class RecordViewModel(
     fun stopRecording() {
         isRunning = false
         isStarted = false
+        chain.value.forEach {
+            it.process(null)
+        }
         stopRec()
         updateDur(0L)
         ampsToSave = amps.value?: arrayListOf()
